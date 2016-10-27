@@ -201,3 +201,4 @@ def main(stdscr):
     while state != 'Exit':
         state = state_actions[state]()
         
+print ('i am angry')
