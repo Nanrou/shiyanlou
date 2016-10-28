@@ -37,7 +37,7 @@ class Polygon(object):
         self.points.append(points_list[0])#现在pionts的尾部加上了list的第一个元素        
         self.color=kwargs.get('color','#000000')
     
-    def drawPoints(self):
+    def drawPoints(self): 
         points_xy=[] 
         for point in self.points:
             points_xy.append(point.xy)#point.xy将返回其自身的x和y
@@ -102,7 +102,28 @@ class Example(wx.Frame):
                 dc.SetPen(wx.Pen(shape.color))
                 dc.DrawLines(shape.drawPoints())
                 
-                
+
+class Circle(Polygon):
+    def __init__(self,CenterPoint,radius,edgeNum=360,**kwargs):
+        self.r = radius
+        
+        center = CenterPoint.xy
+        self.x = center[0]
+        self.y = center[1]
+        
+        circlepoints = []
+        
+        deltaRad = (2*math.pi)/edgeNum#弧度,或者说是多少边型，角数越高，越趋近圆
+        
+        for n in range(edgeNum):
+            circlepoints.append(Point(self.x + self.r*math.cos(deltaRad*n),self.y +self.r*math.sin(deltaRad*n)))
+            
+        Polygon.__init__(self, circlepoints)
+        
+    def area(self):
+        return math.pi * self.r **2
+        
+        
 if __name__ == '__main__':
     
     prepare_draws=[]
@@ -110,9 +131,10 @@ if __name__ == '__main__':
     start_p = Point(50,60)
     a = RectAngle(start_p,100,80,color='#ff0000')
     b = TriAngle(Point(111,30),Point(61,155),Point(99,255))
+    c = Circle(Point(200,180),100)
     prepare_draws.append(a)
     prepare_draws.append(b)
-    
+    prepare_draws.append(c)
     
     for shape in prepare_draws:
         print shape.area()
