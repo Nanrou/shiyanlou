@@ -15,16 +15,16 @@ class Frame(wx.Frame):
                        64:(246,94,59),128:(237,207,114),256:(237,207,114),
                        512:(237,207,114),1024:(237,207,114),2048:(237,207,114)}
         
-        self.set_Icon()#?
-        self.set_Log()
-        self.initGame()#未定义
+        self.set_Icon()#设置图标ico
+        self.set_Log()#设置那个图并将其设置为按钮
+        self.initGame()#初始化游戏内容
         '''
         panel = wx.Panel(self)#panel：仪表
         panel.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
         panel.SetFocus()#?   
         '''
-        self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown) 
-        self.SetFocus()                
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)#现在是绑定这个事件到Frame 
+        self.SetFocus()#激活Frame
         self.initBuffer()#未定义
         self.Bind(wx.EVT_SIZE,self.onSize)
         self.Bind(wx.EVT_PAINT,self.onPaint)
@@ -91,8 +91,8 @@ class Frame(wx.Frame):
             count +=1
     
     def initBuffer(self):
-        w,h = self.GetClientSize()
-        self.buffer = wx.EmptyBitmap(w,h)
+        w,h = self.GetClientSize()#获取可能需要的客户端大小
+        self.buffer = wx.EmptyBitmap(w,h)#应该是创建一个空的位图
         
     def onSize(self,event):
         self.initBuffer()
