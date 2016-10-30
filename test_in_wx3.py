@@ -17,10 +17,12 @@ class Frame(wx.Frame):
         
         #self.set_Icon()#?
         self.initGame()#未定义
-        
-        panel = wx.Panel(self,-1)#panel：仪表
-        panel.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)#
-        panel.SetFocus()#?     
+        '''
+        panel = wx.Panel(self)#panel：仪表
+        panel.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
+        panel.SetFocus()#?   
+        '''
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown) 
                         
         self.initBuffer()#未定义
         self.Bind(wx.EVT_SIZE,self.onSize)
@@ -28,7 +30,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_CLOSE,self.onClose)
         self.SetClientSize((505,680))
         self.Centre()
-        self.Show(True)
+        self.Show()
         
     def onPaint(self,event):
         dc = wx.BufferedPaintDC(self,self.buffer)
@@ -83,11 +85,12 @@ class Frame(wx.Frame):
                 if self.data[row][col] == 0:available.append((row,col))
         if available:
             row,col = available[random.randint(0,len(available)-1)]
-            self.data[row][col] = 2 if random.randint(0,1) else 4
+            self.data[row][col] = 2 if random.randint(0,2) else 4
             return True
         return False
     
     def update(self,vlist,direct):
+        #print 'i am update'
         score = 0
         if direct:
             i = 1
@@ -110,6 +113,7 @@ class Frame(wx.Frame):
         return score
 
     def slideUpDown(self,up):
+        #print 'i am slideyudown'
         score = 0
         numCols = len(self.data[0])
         numRows = len(self.data)
@@ -163,22 +167,28 @@ class Frame(wx.Frame):
                     self.initGame()
                     self.bestScore = bestScore
                     self.drawAll()
+                else:
+                    self.saveScore()
+                    self.Destroy()
+                
                     
     def onKeyDown(self,event):
         
         keyCode = event.GetKeyCode()
+        #print "--------------"
         
-        if keyCode == 87:#wx.WXK_UP:
+        if keyCode == wx.WXK_UP:#87:
             self.doMove(*self.slideUpDown(True))
-        elif keyCode == 83:#wx.WXK_DOWN:
+        elif keyCode == wx.WXK_DOWN:#83:
             self.doMove(*self.slideUpDown(False))
-        elif keyCode == 65:#wx.WXK_LEFT:
+        elif keyCode == wx.WXK_LEFT:#65:
             self.doMove(*self.slideLeftRight(True))
-        elif keyCode == 68:#wx.WXK_RIGHT:
+        elif keyCode == wx.WXK_RIGHT:#68:
             self.doMove(*self.slideLeftRight(False))
         elif keyCode == wx.WXK_ESCAPE:
-            self.onClose(event)
-            
+            if wx.MessageBox(u'确认退出？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
+                self.onClose(event)
+         
     def drawBg(self,dc):
         dc.SetBackground(wx.Brush((250,248,239)))
         dc.Clear()
@@ -235,6 +245,7 @@ class Frame(wx.Frame):
                     dc.SetFont(self.scFont)
                     size = dc.GetTextExtent(str(value))
                 if value != 0 :dc.DrawText(str(value),30+col*115+(100-size[0])/2,165+row*115+(100-size[1])/2)
+
     def drawAll(self):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
         self.drawBg(dc)
