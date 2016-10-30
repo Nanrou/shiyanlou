@@ -15,7 +15,8 @@ class Frame(wx.Frame):
                        64:(246,94,59),128:(237,207,114),256:(237,207,114),
                        512:(237,207,114),1024:(237,207,114),2048:(237,207,114)}
         
-        #self.set_Icon()#?
+        self.set_Icon()#?
+        self.set_Log()
         self.initGame()#未定义
         '''
         panel = wx.Panel(self)#panel：仪表
@@ -23,7 +24,7 @@ class Frame(wx.Frame):
         panel.SetFocus()#?   
         '''
         self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown) 
-                        
+        self.SetFocus()                
         self.initBuffer()#未定义
         self.Bind(wx.EVT_SIZE,self.onSize)
         self.Bind(wx.EVT_PAINT,self.onPaint)
@@ -38,11 +39,28 @@ class Frame(wx.Frame):
     def onClose(self,event):
         self.saveScore()
         self.Destroy()
-    '''    
+        
+    def set_Log(self):
+        panel_log = wx.Panel(self)
+        log = wx.Image('cat.ico',wx.BITMAP_TYPE_ICO).ConvertToBitmap()
+        self.button = wx.BitmapButton(panel_log,-1,log,pos=(10,10))
+        self.Bind(wx.EVT_BUTTON,self.doMe,self.button)
+        self.button.SetDefault()
+        #__w = log.GetWidth()
+        #__h = log.Height()
+        panel_log.SetSize((150,150))
+        self.Fit()
+        #self.Center()
+        self.Show()
+    def doMe(self,event):
+        self.drawChange(-self.score_fb,Flashback=True)
+        self.SetFocus()   
+        
+        
     def set_Icon(self):
-        icon = wx.Icon('icon.ico',wx.BITMAP_TYPE_ICO)
+        icon = wx.Icon('cat.ico',wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon)
-    '''    
+     
     def loadScore(self):
         if os.path.exists('bestscore.ini'):
             ff = open('bestscore.ini')#可以搭配with
@@ -60,18 +78,20 @@ class Frame(wx.Frame):
         self.smFont = wx.Font(12,wx.SWISS,wx.NORMAL,wx.NORMAL,face = u'Roboto')
         self.curScore = 0
         self.bestScore = 0
+        self.score_fb = 0
         self.loadScore()
         self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+        self.oldData = self.data
         count = 0
         while count<2:
             row = random.randint(0,len(self.data)-1)
             col = random.randint(0,len(self.data[0])-1)
             if self.data[row][col]!=0:continue#?
-            self.data[row][col] =2 if random.randint(0,1) else 4#设置最开始的那两个数
+            self.data[row][col] =2 if random.randint(0,3) else 4#设置最开始的那两个数
             count +=1
     
     def initBuffer(self):
-        w,h = self.GetClientSize()#?
+        w,h = self.GetClientSize()
         self.buffer = wx.EmptyBitmap(w,h)
         
     def onSize(self,event):
@@ -90,7 +110,7 @@ class Frame(wx.Frame):
         return False
     
     def update(self,vlist,direct):
-        #print 'i am update'
+        
         score = 0
         if direct:
             i = 1
@@ -130,7 +150,7 @@ class Frame(wx.Frame):
             for row in range(numRows):self.data[row][col] = cvl[row]
         return oldData !=self.data,score
             
-    def slideLeftRight(self,left):
+    def slideLeftRight(self,left=True):
         score = 0
         numRows = len(self.data)
         numCols = len(self.data[0])
@@ -160,6 +180,7 @@ class Frame(wx.Frame):
     def doMove(self,move,score):
         if move:
             self.putTile()
+            self.score_fb = score
             self.drawChange(score)
             if self.isGameOver():
                 if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
@@ -167,6 +188,7 @@ class Frame(wx.Frame):
                     self.initGame()
                     self.bestScore = bestScore
                     self.drawAll()
+                    self.SetFocus() 
                 else:
                     self.saveScore()
                     self.Destroy()
@@ -175,6 +197,7 @@ class Frame(wx.Frame):
     def onKeyDown(self,event):
         
         keyCode = event.GetKeyCode()
+        self.oldData = copy.deepcopy(self.data)
         #print "--------------"
         
         if keyCode == wx.WXK_UP:#87:
@@ -185,8 +208,13 @@ class Frame(wx.Frame):
             self.doMove(*self.slideLeftRight(True))
         elif keyCode == wx.WXK_RIGHT:#68:
             self.doMove(*self.slideLeftRight(False))
+        elif keyCode == 82:
+            if wx.MessageBox(u'确认重来？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
+                self.initGame()
+                self.drawAll()
+                self.SetFocus()
         elif keyCode == wx.WXK_ESCAPE:
-            if wx.MessageBox(u'确认退出？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
+            if wx.MessageBox(u'确认退出？',u'嘻嘻~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
                 self.onClose(event)
          
     def drawBg(self,dc):
@@ -199,7 +227,7 @@ class Frame(wx.Frame):
     def drawLogo(self,dc):
         dc.SetFont(self.smFont)
         dc.SetTextForeground((119,110,101))
-        dc.DrawText(u'合并相同数字，得到2048吧！',15,114)
+        dc.DrawText(u'合并相同数字，得到2048吧！',165,114)
         dc.DrawText(u'怎么玩：\n用方向箭头来移动方块。\
                     \n当两个相同数字的方块碰到一起时，会合成一个！',15,630)
         
@@ -226,11 +254,11 @@ class Frame(wx.Frame):
         dc.DrawText(str(self.bestScore),505-15-bestScoreBoardW+(bestScoreBoardW-bestScoreSize[0])/2,68)
         dc.DrawText(str(self.curScore),505-15-bestScoreBoardW-5-curScoreBoardW+(curScoreBoardW-curScoreSize[0])/2,68)
         
-    def drawTiles(self,dc):
+    def drawTiles(self,dc,Flashback=False):
         dc.SetFont(self.scFont)
         for row in range(4):
             for col in range(4):
-                value = self.data[row][col]
+                value = self.data[row][col] if not Flashback else self.oldData[row][col]
                 color = self.colors[value]
                 if value == 2 or value == 4:
                     dc.SetTextForeground((119,110,101))
@@ -250,18 +278,18 @@ class Frame(wx.Frame):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
         self.drawBg(dc)
         self.drawLogo(dc)
-        self.drawLogo(dc)
         self.drawScore(dc)
         self.drawTiles(dc)
         
-    def drawChange(self,score):
+    def drawChange(self,score,Flashback=False):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
+
         if score:
             self.curScore += score
             if self.curScore > self.bestScore:
                 self.bestScore = self.curScore
             self.drawScore(dc)
-        self.drawTiles(dc)
+        self.drawTiles(dc,Flashback)
         
         
         
