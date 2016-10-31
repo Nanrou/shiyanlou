@@ -69,10 +69,8 @@ class Frame(wx.Frame):
         if os.path.exists('bestscore.ini'):
             with open('bestscore.ini','r') as ff:
                 self.bestScore = ff.read()
-                print self.bestScore,'i am loadScore'
     def saveScore(self):
         with open('bestscore.ini','w') as ff:
-            print self.bestScore,'i am savescore'
             ff.write(str(self.bestScore))
             
         
@@ -84,7 +82,6 @@ class Frame(wx.Frame):
         self.bestScore = 0
         self.score_fb = 0
         self.loadScore()#读取数据
-        print self.bestScore ,'i am init'
         self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]#设置初始值
         self.oldData = self.data
         count = 0
@@ -146,16 +143,17 @@ class Frame(wx.Frame):
         for col in range(numCols):#遍历列数，一个循环只搞一列
             cvl = [self.data[row][col] for row in range(numRows) if self.data[row][col]!=0]
             #遍历行数，在这列的4个数中找到非0值放到cvl这个list里面
-            
+            #因为有个靠边的操作，比如1列位置[0,1,2,3]对应的值为[0,2,0,2],则cvl中的值为[2,2],则len(cvl)=2
             if len(cvl)>=2:#这个值应该大于2.（因为一列只有4个数，有两个就可以判断是否相邻且相等）
                 score += self.update(cvl,up)#将cvl这个list和bool传给update
+                #cvl经过update已经被改变了，现在cvl的值是[4,]
             for i in range(numRows - len(cvl)):#若4个格都有数，则不执行这补0循环
-            #因为有个靠边的操作，比如1列位置[0,1,2,3]对应的值为[0,2,0,2],则cvl中的值为[2,2],则len(cvl)=2，需补齐4个，所以循环两次
                 if up : cvl.append(0)#然后如果向上操作,则在cvl后面补入0
                 else: cvl.insert(0,0)
-            for row in range(numRows):self.data[row][col] = cvl[row]#重新赋值,将[0,2,0,2]变成[2,2,0,0]
+            for row in range(numRows):self.data[row][col] = cvl[row]#重新赋值,将[4,]变成[4,0,0,0]
         return oldData !=self.data,score#换回一个bool值,当oldData不等于data时为真，则当该列4个都有数时为假(4个数都没变);和返回得分
-            
+        #经过update会将重复项消掉(或将0移位)
+        
     def slideLeftRight(self,left):
         score = 0
         numRows = len(self.data)
@@ -179,8 +177,8 @@ class Frame(wx.Frame):
         
         flag = False
         if not self.slideLeftRight(True)[0] and not self.slideLeftRight(False)[0] and \
-            not self.slideLeftRight(True)[0] and not self.slideLeftRight(False)[0]:
-            #对四个方向进行操作，若每个格子都有数则结束
+                not self.slideUpDown(True)[0] and not self.slideUpDown(False)[0]:
+            #对四个方向进行操作，若
             #这个[0]是指函数返回的第一个值。retrun返回的是一个tuple
             flag = True
         if not flag: self.data = copyData#若能移动则会打乱data，所以需要重新赋值。
@@ -188,20 +186,20 @@ class Frame(wx.Frame):
     
     def doMove(self,move,score):#接收一个bool和score
         if move:
-            print self.bestScore,'i am doMove',score
             self.putTile()
             #self.score_fb = score
             self.drawChange(score)
-            if self.isGameOver():
-                if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
-                    bestScore = self.bestScore
-                    self.initGame()
-                    self.bestScore = bestScore
-                    self.drawAll()
-                    self.SetFocus() 
-                else:
-                    self.saveScore()
-                    self.Destroy()
+            if not self.putTile():#先进行是否存在空位置的判断
+                if self.isGameOver():#再判断是否能移动
+                    if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
+                        bestScore = self.bestScore
+                        self.initGame()
+                        self.bestScore = bestScore
+                        self.drawAll()
+                        self.SetFocus() 
+                    else:
+                        self.saveScore()
+                        self.Destroy()
                 
                     
     def onKeyDown(self,event):#响应EVT_KEY_DOWN事件的方法
@@ -293,19 +291,10 @@ class Frame(wx.Frame):
     def drawChange(self,score,Flashback=False):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
         
-        print score ,'i am score from drawChange'
         if score:
             self.curScore += score
-            print self.curScore, 'i am cur from drawChange'
-            print self.bestScore, 'i am best from drawChange'
-            
             if int(self.curScore)>int(self.bestScore):#定义int
-                print '--------------------------------'
-                print 'after conclue'
                 self.bestScore = self.curScore
-                print self.curScore, 'i am cur from drawChange'
-                print self.bestScore, 'i am best from drawChange'
-                print '--------------------------------'
             self.drawScore(dc)
         self.drawTiles(dc)#,Flashback)
         
