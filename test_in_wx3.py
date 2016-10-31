@@ -15,9 +15,9 @@ class Frame(wx.Frame):
                        64:(246,94,59),128:(237,207,114),256:(237,207,114),
                        512:(237,207,114),1024:(237,207,114),2048:(237,207,114)}
         
+        self.initGame()#初始化游戏内容
         self.set_Icon()#设置图标ico
         self.set_Log()#设置那个图并将其设置为按钮
-        self.initGame()#初始化游戏内容
         '''
         panel = wx.Panel(self)#panel：仪表
         panel.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
@@ -68,12 +68,12 @@ class Frame(wx.Frame):
     def loadScore(self):#现读取有问题
         if os.path.exists('bestscore.ini'):
             with open('bestscore.ini','r') as ff:
+                print ff.read()
                 self.bestScore = ff.read()
 
     def saveScore(self):
         with open('bestscore.ini','w') as ff:
             ff.write(str(self.bestScore))
-            print self.bestScore
         
     def initGame(self):#初始化游戏
         self.bgFont = wx.Font(50,wx.SWISS,wx.NORMAL,wx.BOLD,face = u'Roboto')#设置字体
@@ -82,7 +82,7 @@ class Frame(wx.Frame):
         self.curScore = 0
         self.bestScore = 0
         self.score_fb = 0
-        #self.loadScore()#读取数据
+        self.loadScore()#读取数据
         self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]#设置初始值
         self.oldData = self.data
         count = 0
@@ -147,14 +147,14 @@ class Frame(wx.Frame):
             
             if len(cvl)>=2:#这个值应该大于2.（因为一列只有4个数，有两个就可以判断是否相邻且相等）
                 score += self.update(cvl,up)#将cvl这个list和bool传给update
-            for i in range(numRows - len(cvl)):
+            for i in range(numRows - len(cvl)):#若4个格都有数，则不执行这补0循环
             #因为有个靠边的操作，比如1列位置[0,1,2,3]对应的值为[0,2,0,2],则cvl中的值为[2,2],则len(cvl)=2，需补齐4个，所以循环两次
                 if up : cvl.append(0)#然后如果向上操作,则在cvl后面补入0
                 else: cvl.insert(0,0)
             for row in range(numRows):self.data[row][col] = cvl[row]#重新赋值,将[0,2,0,2]变成[2,2,0,0]
-        return oldData !=self.data,score#换回一个bool值,当oldData不等于data时为真，则当该列4个都有数时为假;和返回得分
+        return oldData !=self.data,score#换回一个bool值,当oldData不等于data时为真，则当该列4个都有数时为假(4个数都没变);和返回得分
             
-    def slideLeftRight(self,left=True):
+    def slideLeftRight(self,left):
         score = 0
         numRows = len(self.data)
         numCols = len(self.data[0])
@@ -171,17 +171,20 @@ class Frame(wx.Frame):
             for col in range(numCols):self.data[row][col] = rvl[col]
         return oldData !=self.data,score
     
-    def isGameOver(self):
-        copyData = copy.deepcopy(self.data)
+    def isGameOver(self):#判断是否结束游戏。
+        #！！！！这个判断是有问题的，当满格数字的时候就直接判断为gameover了！！！！
+        copyData = copy.deepcopy(self.data)#先备份data，因为下面判断执行会把data打乱
         
         flag = False
         if not self.slideLeftRight(True)[0] and not self.slideLeftRight(False)[0] and \
             not self.slideLeftRight(True)[0] and not self.slideLeftRight(False)[0]:
+            #对四个方向进行操作，若每个格子都有数则结束
+            #这个[0]是指函数返回的第一个值。retrun返回的是一个tuple
             flag = True
-        if not flag: self.data = copyData
+        if not flag: self.data = copyData#若能移动则会打乱data，所以需要重新赋值。
         return flag
     
-    def doMove(self,move,score):
+    def doMove(self,move,score):#接收一个bool和score
         if move:
             self.putTile()
             self.score_fb = score
@@ -198,13 +201,13 @@ class Frame(wx.Frame):
                     self.Destroy()
                 
                     
-    def onKeyDown(self,event):
+    def onKeyDown(self,event):#响应EVT_KEY_DOWN事件的方法
         
-        keyCode = event.GetKeyCode()
+        keyCode = event.GetKeyCode()#获取按键的编码
         self.oldData = copy.deepcopy(self.data)
         
         if keyCode == wx.WXK_UP:#87:
-            self.doMove(*self.slideUpDown(True))
+            self.doMove(*self.slideUpDown(True))#需要用*来表示接收的tuple
         elif keyCode == wx.WXK_DOWN:#83:
             self.doMove(*self.slideUpDown(False))
         elif keyCode == wx.WXK_LEFT:#65:
@@ -220,14 +223,14 @@ class Frame(wx.Frame):
             if wx.MessageBox(u'确认退出？',u'嘻嘻~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
                 self.onClose(event)
          
-    def drawBg(self,dc):
+    def drawBg(self,dc):#画背景
         dc.SetBackground(wx.Brush((250,248,239)))
         dc.Clear()
         dc.SetBackground(wx.Brush((187,173,160)))
         dc.SetPen(wx.Pen((187,173,160)))
         dc.DrawRoundedRectangle(15,150,475,475,5)
         
-    def drawLogo(self,dc):
+    def drawLogo(self,dc):#画出那些字
         dc.SetFont(self.smFont)
         dc.SetTextForeground((119,110,101))
         dc.DrawText(u'合并相同数字，得到2048吧！',165,114)
