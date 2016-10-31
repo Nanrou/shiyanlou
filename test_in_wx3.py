@@ -68,12 +68,13 @@ class Frame(wx.Frame):
     def loadScore(self):#现读取有问题
         if os.path.exists('bestscore.ini'):
             with open('bestscore.ini','r') as ff:
-                print ff.read()
                 self.bestScore = ff.read()
-
+                print self.bestScore,'i am loadScore'
     def saveScore(self):
         with open('bestscore.ini','w') as ff:
+            print self.bestScore,'i am savescore'
             ff.write(str(self.bestScore))
+            
         
     def initGame(self):#初始化游戏
         self.bgFont = wx.Font(50,wx.SWISS,wx.NORMAL,wx.BOLD,face = u'Roboto')#设置字体
@@ -83,6 +84,7 @@ class Frame(wx.Frame):
         self.bestScore = 0
         self.score_fb = 0
         self.loadScore()#读取数据
+        print self.bestScore ,'i am init'
         self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]#设置初始值
         self.oldData = self.data
         count = 0
@@ -186,8 +188,9 @@ class Frame(wx.Frame):
     
     def doMove(self,move,score):#接收一个bool和score
         if move:
+            print self.bestScore,'i am doMove',score
             self.putTile()
-            self.score_fb = score
+            #self.score_fb = score
             self.drawChange(score)
             if self.isGameOver():
                 if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
@@ -204,7 +207,7 @@ class Frame(wx.Frame):
     def onKeyDown(self,event):#响应EVT_KEY_DOWN事件的方法
         
         keyCode = event.GetKeyCode()#获取按键的编码
-        self.oldData = copy.deepcopy(self.data)
+        #self.oldData = copy.deepcopy(self.data)
         
         if keyCode == wx.WXK_UP:#87:
             self.doMove(*self.slideUpDown(True))#需要用*来表示接收的tuple
@@ -230,7 +233,7 @@ class Frame(wx.Frame):
         dc.SetPen(wx.Pen((187,173,160)))
         dc.DrawRoundedRectangle(15,150,475,475,5)
         
-    def drawLogo(self,dc):#画出那些字
+    def drawTips(self,dc):#画出那些字
         dc.SetFont(self.smFont)
         dc.SetTextForeground((119,110,101))
         dc.DrawText(u'合并相同数字，得到2048吧！',165,114)
@@ -260,11 +263,11 @@ class Frame(wx.Frame):
         dc.DrawText(str(self.bestScore),505-15-bestScoreBoardW+(bestScoreBoardW-bestScoreSize[0])/2,68)
         dc.DrawText(str(self.curScore),505-15-bestScoreBoardW-5-curScoreBoardW+(curScoreBoardW-curScoreSize[0])/2,68)
         
-    def drawTiles(self,dc,Flashback=False):
+    def drawTiles(self,dc):#,Flashback=False):
         dc.SetFont(self.scFont)
         for row in range(4):
             for col in range(4):
-                value = self.data[row][col] if not Flashback else self.oldData[row][col]
+                value = self.data[row][col] #if not Flashback else self.oldData[row][col]
                 color = self.colors[value]
                 if value == 2 or value == 4:
                     dc.SetTextForeground((119,110,101))
@@ -283,19 +286,28 @@ class Frame(wx.Frame):
     def drawAll(self):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
         self.drawBg(dc)
-        self.drawLogo(dc)
+        self.drawTips(dc)
         self.drawScore(dc)
         self.drawTiles(dc)
         
     def drawChange(self,score,Flashback=False):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
-
+        
+        print score ,'i am score from drawChange'
         if score:
             self.curScore += score
-            if self.curScore > self.bestScore:
+            print self.curScore, 'i am cur from drawChange'
+            print self.bestScore, 'i am best from drawChange'
+            
+            if int(self.curScore)>int(self.bestScore):#定义int
+                print '--------------------------------'
+                print 'after conclue'
                 self.bestScore = self.curScore
+                print self.curScore, 'i am cur from drawChange'
+                print self.bestScore, 'i am best from drawChange'
+                print '--------------------------------'
             self.drawScore(dc)
-        self.drawTiles(dc,Flashback)
+        self.drawTiles(dc)#,Flashback)
         
         
         
