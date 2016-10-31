@@ -25,20 +25,20 @@ class Frame(wx.Frame):
         '''
         self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)#现在是绑定这个事件到Frame 
         self.SetFocus()#激活Frame
-        self.initBuffer()#未定义
-        self.Bind(wx.EVT_SIZE,self.onSize)
-        self.Bind(wx.EVT_PAINT,self.onPaint)
-        self.Bind(wx.EVT_CLOSE,self.onClose)
-        self.SetClientSize((505,680))
-        self.Centre()
+        self.initBuffer()#初始化窗口大小
+        self.Bind(wx.EVT_SIZE,self.onSize)#为改变尺寸这个事件，绑定方法
+        self.Bind(wx.EVT_PAINT,self.onPaint)#这个事件是绘图重绘
+        self.Bind(wx.EVT_CLOSE,self.onClose)#赋予关闭事件方法
+        self.SetClientSize((505,680))#设置整个frame的大小
+        self.Centre()#居中
         self.Show()
         
     def onPaint(self,event):
-        dc = wx.BufferedPaintDC(self,self.buffer)
+        dc = wx.BufferedPaintDC(self,self.buffer)#BufferedDC的子类，缓存指令来用于画图
         
     def onClose(self,event):
         self.saveScore()
-        self.Destroy()
+        self.Destroy()#关闭了
         
     def set_Log(self):
         panel_log = wx.Panel(self)
@@ -53,41 +53,44 @@ class Frame(wx.Frame):
         #self.Center()
         self.Show()
     def doMe(self,event):
+        '''
         self.drawChange(-self.score_fb,Flashback=True)
-        self.SetFocus()   
+        self.SetFocus()
+        '''
+        self.saveScore()
+        self.Destroy()#关闭了   
         
         
     def set_Icon(self):
-        icon = wx.Icon('cat.ico',wx.BITMAP_TYPE_ICO)
-        self.SetIcon(icon)
+        icon = wx.Icon('cat.ico',wx.BITMAP_TYPE_ICO)#加载图标
+        self.SetIcon(icon)#设置图标
      
-    def loadScore(self):
+    def loadScore(self):#现读取有问题
         if os.path.exists('bestscore.ini'):
-            ff = open('bestscore.ini')#可以搭配with
-            self.bstScore = ff.read()
-            ff.close()
-        
+            with open('bestscore.ini','r') as ff:
+                self.bestScore = ff.read()
+
     def saveScore(self):
-        ff = open('bestscore.ini','w')
-        ff.write(str(self.bestScore))
-        ff.close()
+        with open('bestscore.ini','w') as ff:
+            ff.write(str(self.bestScore))
+            print self.bestScore
         
-    def initGame(self):
-        self.bgFont = wx.Font(50,wx.SWISS,wx.NORMAL,wx.BOLD,face = u'Roboto')
+    def initGame(self):#初始化游戏
+        self.bgFont = wx.Font(50,wx.SWISS,wx.NORMAL,wx.BOLD,face = u'Roboto')#设置字体
         self.scFont = wx.Font(36,wx.SWISS,wx.NORMAL,wx.BOLD,face = u'Roboto')
         self.smFont = wx.Font(12,wx.SWISS,wx.NORMAL,wx.NORMAL,face = u'Roboto')
         self.curScore = 0
         self.bestScore = 0
         self.score_fb = 0
-        self.loadScore()
-        self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+        #self.loadScore()#读取数据
+        self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]#设置初始值
         self.oldData = self.data
         count = 0
-        while count<2:
+        while count<2:#设置最开始的那两个数
             row = random.randint(0,len(self.data)-1)
             col = random.randint(0,len(self.data[0])-1)
-            if self.data[row][col]!=0:continue#?
-            self.data[row][col] =2 if random.randint(0,3) else 4#设置最开始的那两个数
+            if self.data[row][col]!=0:continue#重新跳到循环的开头，就是万一第二个数位置跟第一个一样，就重新选择第二个数的位置
+            self.data[row][col] =2 if random.randint(0,3) else 4
             count +=1
     
     def initBuffer(self):
@@ -95,33 +98,33 @@ class Frame(wx.Frame):
         self.buffer = wx.EmptyBitmap(w,h)#应该是创建一个空的位图
         
     def onSize(self,event):
-        self.initBuffer()
-        self.drawAll()
+        self.initBuffer()#重新找到大小
+        self.drawAll()#重新画全部
         
-    def putTile(self):
+    def putTile(self):#在空的位置产生新的数，并返回一个bool
         available = []
-        for row in range(len(self.data)):
-            for col in range(len(self.data[0])):
-                if self.data[row][col] == 0:available.append((row,col))
-        if available:
-            row,col = available[random.randint(0,len(available)-1)]
-            self.data[row][col] = 2 if random.randint(0,2) else 4
-            return True
+        for row in range(len(self.data)):#遍历行数
+            for col in range(len(self.data[0])):#遍历列数
+                if self.data[row][col] == 0:available.append((row,col))#找到仍未赋值的坐标放到available里面
+        if available:#若存在空的位置
+            row,col = available[random.randint(0,len(available)-1)]#在其中随机找到一个坐标
+            self.data[row][col] = 2 if random.randint(0,2) else 4#赋值2或4
+            return True#返回一个真值
         return False
     
-    def update(self,vlist,direct):
+    def update(self,vlist,direct):#接收传入的非空值的坐标列表，和bool值(为什么要判断这个bool）
         
         score = 0
-        if direct:
+        if direct:#向上或者向左，都是前一个
             i = 1
             while i<len(vlist):
-                if vlist[i-1] == vlist[i]:
-                    del vlist[i]
-                    vlist[i-1] *=2
-                    score += vlist[i-1]
-                    i += 1
-                i += 1
-        else:
+                if vlist[i-1] == vlist[i]:#若相邻两个元素相等
+                    del vlist[i] #则消去一个(后者)；这里会令len(vlist)-1
+                    vlist[i-1] *=2#前者*2作为得分
+                    score += vlist[i-1]#加分数
+                    i += 1#因为这次操作是比较了两个，所以要跳一位
+                i += 1#循环加位
+        else:#为什么要用else，算法应该是一样的，需要尝试取消这部分，尝试direct=True
             i = len(vlist)-1
             while i>0:
                 if vlist[i-1] == vlist[i]:
@@ -132,23 +135,24 @@ class Frame(wx.Frame):
                 i -= 1
         return score
 
-    def slideUpDown(self,up):
-        #print 'i am slideyudown'
+    def slideUpDown(self,up):#通过bool来判断上下移动
         score = 0
         numCols = len(self.data[0])
         numRows = len(self.data)
-        oldData = copy.deepcopy(self.data)
+        oldData = copy.deepcopy(self.data)#deepcopy是直接复制，产生一个新的。只是等号的话，是引用。
         
-        for col in range(numCols):
+        for col in range(numCols):#遍历列数，一个循环只搞一列
             cvl = [self.data[row][col] for row in range(numRows) if self.data[row][col]!=0]
+            #遍历行数，在这列的4个数中找到非0值放到cvl这个list里面
             
-            if len(cvl)>=2:
-                score += self.update(cvl,up)
+            if len(cvl)>=2:#这个值应该大于2.（因为一列只有4个数，有两个就可以判断是否相邻且相等）
+                score += self.update(cvl,up)#将cvl这个list和bool传给update
             for i in range(numRows - len(cvl)):
-                if up : cvl.append(0)
+            #因为有个靠边的操作，比如1列位置[0,1,2,3]对应的值为[0,2,0,2],则cvl中的值为[2,2],则len(cvl)=2，需补齐4个，所以循环两次
+                if up : cvl.append(0)#然后如果向上操作,则在cvl后面补入0
                 else: cvl.insert(0,0)
-            for row in range(numRows):self.data[row][col] = cvl[row]
-        return oldData !=self.data,score
+            for row in range(numRows):self.data[row][col] = cvl[row]#重新赋值,将[0,2,0,2]变成[2,2,0,0]
+        return oldData !=self.data,score#换回一个bool值,当oldData不等于data时为真，则当该列4个都有数时为假;和返回得分
             
     def slideLeftRight(self,left=True):
         score = 0
@@ -198,7 +202,6 @@ class Frame(wx.Frame):
         
         keyCode = event.GetKeyCode()
         self.oldData = copy.deepcopy(self.data)
-        #print "--------------"
         
         if keyCode == wx.WXK_UP:#87:
             self.doMove(*self.slideUpDown(True))
