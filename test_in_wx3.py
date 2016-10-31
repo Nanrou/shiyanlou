@@ -64,7 +64,7 @@ class Frame(wx.Frame):
     def loadScore(self):
         if os.path.exists('bestscore.ini'):
             ff = open('bestscore.ini')#可以搭配with
-            self.bstScore = ff.read()
+            self.bestScore = ff.read()
             ff.close()
         
     def saveScore(self):
