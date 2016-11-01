@@ -53,22 +53,24 @@ class Frame(wx.Frame):
         #self.Center()
         self.Show()
     def doMe(self,event):
-        '''
-        self.drawChange(-self.score_fb,Flashback=True)
-        self.SetFocus()
-        '''
-        self.saveScore()
-        self.Destroy()#关闭了   
-        
+        if self.flag_fb:
+            self.drawChange(-self.score_fb,Flashback=True)
+            self.data = copy.deepcopy(self.oldData)
+            self.SetFocus()
+            self.flag_fb=False
+        else:
+            wx.MessageBox(u'只能悔一步喔~~',u'咔咔~',wx.ICON_INFORMATION) 
+            self.SetFocus()
         
     def set_Icon(self):
         icon = wx.Icon('cat.ico',wx.BITMAP_TYPE_ICO)#加载图标
         self.SetIcon(icon)#设置图标
      
-    def loadScore(self):#现读取有问题
+    def loadScore(self):
         if os.path.exists('bestscore.ini'):
             with open('bestscore.ini','r') as ff:
                 self.bestScore = ff.read()
+    
     def saveScore(self):
         with open('bestscore.ini','w') as ff:
             ff.write(str(self.bestScore))
@@ -84,6 +86,7 @@ class Frame(wx.Frame):
         self.loadScore()#读取数据
         self.data = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]#设置初始值
         self.oldData = self.data
+        self.flag_fb = False
         count = 0
         while count<2:#设置最开始的那两个数
             row = random.randint(0,len(self.data)-1)
@@ -100,8 +103,9 @@ class Frame(wx.Frame):
         self.initBuffer()#重新找到大小
         self.drawAll()#重新画全部
         
-    def putTile(self):#在空的位置产生新的数，并返回一个bool
+    def putTile(self,Flashback=False):#在空的位置产生新的数，并返回一个bool
         available = []
+        if Flashback:self.data = self.oldData
         for row in range(len(self.data)):#遍历行数
             for col in range(len(self.data[0])):#遍历列数
                 if self.data[row][col] == 0:available.append((row,col))#找到仍未赋值的坐标放到available里面
@@ -186,26 +190,27 @@ class Frame(wx.Frame):
     
     def doMove(self,move,score):#接收一个bool和score
         if move:
+            self.flag_fb = True
+            self.score_fb = score
             self.putTile()
-            #self.score_fb = score
             self.drawChange(score)
-            if not self.putTile():#先进行是否存在空位置的判断
-                if self.isGameOver():#再判断是否能移动
-                    if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
-                        bestScore = self.bestScore
-                        self.initGame()
-                        self.bestScore = bestScore
-                        self.drawAll()
-                        self.SetFocus() 
-                    else:
-                        self.saveScore()
-                        self.Destroy()
+            #if not self.putTile():#先进行是否存在空位置的判断
+            if self.isGameOver():#再判断是否能移动
+                if wx.MessageBox(u'游戏结束，是否重新开始？',u'哈哈~',wx.YES_NO|wx.ICON_INFORMATION) == wx.YES:
+                    bestScore = self.bestScore
+                    self.initGame()
+                    self.bestScore = bestScore
+                    self.drawAll()
+                    self.SetFocus() 
+                else:
+                    self.saveScore()
+                    self.Destroy()
                 
                     
     def onKeyDown(self,event):#响应EVT_KEY_DOWN事件的方法
         
         keyCode = event.GetKeyCode()#获取按键的编码
-        #self.oldData = copy.deepcopy(self.data)
+        self.oldData = copy.deepcopy(self.data)
         
         if keyCode == wx.WXK_UP:#87:
             self.doMove(*self.slideUpDown(True))#需要用*来表示接收的tuple
@@ -261,11 +266,11 @@ class Frame(wx.Frame):
         dc.DrawText(str(self.bestScore),505-15-bestScoreBoardW+(bestScoreBoardW-bestScoreSize[0])/2,68)
         dc.DrawText(str(self.curScore),505-15-bestScoreBoardW-5-curScoreBoardW+(curScoreBoardW-curScoreSize[0])/2,68)
         
-    def drawTiles(self,dc):#,Flashback=False):
+    def drawTiles(self,dc,Flashback=False):
         dc.SetFont(self.scFont)
         for row in range(4):
             for col in range(4):
-                value = self.data[row][col] #if not Flashback else self.oldData[row][col]
+                value = self.data[row][col] if not Flashback else self.oldData[row][col]
                 color = self.colors[value]
                 if value == 2 or value == 4:
                     dc.SetTextForeground((119,110,101))
@@ -291,12 +296,12 @@ class Frame(wx.Frame):
     def drawChange(self,score,Flashback=False):
         dc = wx.BufferedDC(wx.ClientDC(self),self.buffer)
         
-        if score:
+        if abs(score):
             self.curScore += score
             if int(self.curScore)>int(self.bestScore):#定义int
                 self.bestScore = self.curScore
             self.drawScore(dc)
-        self.drawTiles(dc)#,Flashback)
+        self.drawTiles(dc,Flashback)
         
         
         
