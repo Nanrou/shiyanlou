@@ -33,7 +33,7 @@ def recommend(user):
         lis.append(result)
     
     for l in lis:
-        sql = 'select anime_id from anime_style where style_id=' +str(i)+';'
+        sql = 'select anime_id from anime_style where style_id=' +str(l)+';'
         cur.execute(sql)
         results = cur.fetchall()
         anime_lis = []
